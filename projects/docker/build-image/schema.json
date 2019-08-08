@@ -1,0 +1,12 @@
+{
+  "title": "Build Image Schema",
+  "id": "BuildImageSchema",
+  "description": "Build Image options",
+  "properties": {
+    "dockerfile": {
+      "description": "Path to Dockerfile",
+      "type": "string",
+      "default": "Dockerfile"
+    }
+  }
+}

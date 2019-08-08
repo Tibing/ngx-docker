@@ -1,0 +1,10 @@
+{
+  "$schema": "@angular-devkit/architect/src/builders-schema.json",
+  "builders": {
+    "build-image": {
+      "implementation": "./build-image/index.js",
+      "schema": "./build-image/schema.json",
+      "description": "Cli Panel Browser Builder"
+    }
+  }
+}

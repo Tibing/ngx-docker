@@ -1,0 +1,10 @@
+{
+  "name": "ngx-docker",
+  "version": "0.0.1",
+  "main": "index.js",
+  "description": "Angular CLI Docker",
+  "keywords": ["angular", "typescript", "rxjs", "webpack"],
+  "author": "Nikita Poltoratsky",
+  "license": "MIT",
+  "builders": "builders.json"
+}
