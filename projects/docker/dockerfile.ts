@@ -1,4 +1,6 @@
-export const Dockerfile = `
+import { join } from 'path';
+
+export const Dockerfile = (root: string) => `
 # base image
 FROM node:12.2.0
 
@@ -14,13 +16,15 @@ WORKDIR /app
 ENV PATH /app/node_modules/.bin:$PATH
 
 # install and cache app dependencies
-COPY package.json /app/package.json
+COPY ${packageJson(root)} /app/package.json
 RUN npm install
 RUN npm install -g @angular/cli
 
 # add app
-COPY . /app
+COPY ${root} /app
 
 # start app
 CMD ng serve --host 0.0.0.0
 `;
+
+const packageJson = (root: string) => join(root, 'package.json');

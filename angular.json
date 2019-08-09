@@ -13,6 +13,9 @@
         "build-image": {
           "builder": "ngx-docker:build-image"
         },
+        "run": {
+          "builder": "ngx-docker:run"
+        },
         "build": {
           "builder": "@angular-devkit/build-angular:browser",
           "options": {

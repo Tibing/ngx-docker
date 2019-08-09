@@ -4,7 +4,12 @@
     "build-image": {
       "implementation": "./build-image/index.js",
       "schema": "./build-image/schema.json",
-      "description": "Cli Panel Browser Builder"
+      "description": "Build Docker Image"
+    },
+    "run": {
+      "implementation": "./run/index.js",
+      "schema": "./run/schema.json",
+      "description": "Run Docker Container"
     }
   }
 }

@@ -1,5 +1,4 @@
 // tslint:disable-next-line:no-empty-interface
-export interface DockerBuildSchema {
+export interface DockerRunSchema {
   project: string;
-  dockerfile: string;
 }

@@ -1,4 +1,5 @@
 import * as Dockerode from 'dockerode';
+import * as Stream from 'stream';
 import { from, Observable, Observer } from 'rxjs';
 import { mergeMap } from 'rxjs/operators';
 import { join } from 'path';
@@ -11,6 +12,10 @@ const DOCKERFILE_NAME = 'Dockerfile';
 
 export interface RunOptions {
   container: string;
+  cmd?: string[];
+  stream?: Stream[];
+  createOptions?: any[];
+  startOptions?: any;
 }
 
 export interface BuildImageOptions {
@@ -44,12 +49,24 @@ export class Docker {
   }
 
   private runDelegate(options: RunOptions): Observable<boolean> {
-    return from<Observable<boolean>>(this.delegate.run(options));
+    const defaultOptions = {
+      stream: [process.stdout, process.stderr],
+      createOptions: { Tty: false },
+    };
+    const { container, cmd, stream, createOptions, startOptions } = { ...defaultOptions, ...options };
+    return from<Observable<boolean>>(this.delegate.run(
+      container,
+      cmd,
+      stream,
+      createOptions,
+      startOptions,
+    ));
   }
 
   private createTmpDockerfile(): Observable<void> {
     const dockerfilePath = join(tmpdir(), DOCKERFILE_NAME);
-    return writeFile(dockerfilePath, Dockerfile);
+    const root = process.cwd();
+    return writeFile(dockerfilePath, Dockerfile(root));
   }
 
   private followProgress(stream: ReadableStream): Observable<boolean> {

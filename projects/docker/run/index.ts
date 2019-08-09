@@ -3,15 +3,15 @@ import { json } from '@angular-devkit/core';
 import { Observable, of } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
 
-import { DockerBuildSchema } from './schema';
+import { DockerRunSchema } from './schema';
 import { Docker } from '../docker';
 
-export default createBuilder<json.JsonObject & DockerBuildSchema>(
-  (schema: DockerBuildSchema, context: BuilderContext): Observable<BuilderOutput> => {
+export default createBuilder<json.JsonObject & DockerRunSchema>(
+  (schema: DockerRunSchema, context: BuilderContext): Observable<BuilderOutput> => {
     const docker = new Docker();
-    const imageName = resolveProject(schema, context);
+    const container = resolveProject(schema, context);
 
-    return docker.buildImage({ imageName }).pipe(
+    return docker.run({ container }).pipe(
       tap(out => context.logger.info(JSON.stringify(out))),
       map(() => ({ success: true })),
       catchError((err) => {
@@ -22,7 +22,7 @@ export default createBuilder<json.JsonObject & DockerBuildSchema>(
   },
 );
 
-function resolveProject(schema: DockerBuildSchema, context: BuilderContext): string {
+function resolveProject(schema: DockerRunSchema, context: BuilderContext): string {
   if (schema.project) {
     return schema.project;
   }
