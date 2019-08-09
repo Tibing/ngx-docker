@@ -3,6 +3,11 @@
   "id": "BuildImageSchema",
   "description": "Build Image options",
   "properties": {
+    "project": {
+      "type": "string",
+      "description": "The name of the project.",
+      "default": ""
+    },
     "dockerfile": {
       "description": "Path to Dockerfile",
       "type": "string",

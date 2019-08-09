@@ -8,10 +8,11 @@ import { Docker } from '../docker';
 
 export default createBuilder<json.JsonObject & DockerBuilderSchema>(
   (schema: DockerBuilderSchema, context: BuilderContext): Observable<BuilderOutput> => {
-    console.log(`Schema: ${JSON.stringify(schema)}`);
     const docker = new Docker();
-    return docker.buildImage().pipe(
-      tap(out => context.logger.info(`Progress: ${JSON.stringify(out)}`)),
+    const imageName = resolveProject(schema, context);
+
+    return docker.buildImage({ imageName }).pipe(
+      tap(out => context.logger.info(JSON.stringify(out))),
       map(() => ({ success: true })),
       catchError((err) => {
         context.logger.info(`Error: ${err.stack}`);
@@ -21,3 +22,14 @@ export default createBuilder<json.JsonObject & DockerBuilderSchema>(
   },
 );
 
+function resolveProject(schema: DockerBuilderSchema, context: BuilderContext): string {
+  if (schema.project) {
+    return schema.project;
+  }
+
+  if (context.target) {
+    return context.target.project;
+  }
+
+  throw new Error(`Please, provide project name for the builder.`);
+}

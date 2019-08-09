@@ -13,6 +13,10 @@ export interface RunOptions {
   container: string;
 }
 
+export interface BuildImageOptions {
+  imageName: string;
+}
+
 export interface BuildImageProgress {
   status: string;
 }
@@ -21,9 +25,9 @@ export class Docker {
 
   private delegate: Dockerode = new Dockerode();
 
-  buildImage(): Observable<BuildImageProgress> {
+  buildImage(options: BuildImageOptions): Observable<BuildImageProgress> {
     return this.createTmpDockerfile().pipe(
-      mergeMap(this.buildImageDelegate.bind(this)),
+      mergeMap(() => this.buildImageDelegate(options.imageName)),
       mergeMap(this.followProgress.bind(this)),
     );
   }
@@ -32,11 +36,11 @@ export class Docker {
     return this.runDelegate(options);
   }
 
-  private buildImageDelegate(): Observable<ReadableStream> {
+  private buildImageDelegate(t: string): Observable<ReadableStream> {
     return from<Observable<ReadableStream>>(this.delegate.buildImage({
       context: tmpdir(),
       src: [DOCKERFILE_NAME],
-    }));
+    }, { t }));
   }
 
   private runDelegate(options: RunOptions): Observable<boolean> {
