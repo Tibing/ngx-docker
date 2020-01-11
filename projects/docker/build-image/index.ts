@@ -1,7 +1,7 @@
 import { BuilderContext, BuilderOutput, createBuilder } from '@angular-devkit/architect';
 import { json } from '@angular-devkit/core';
 import { Observable, of } from 'rxjs';
-import { catchError, mapTo, tap } from 'rxjs/operators';
+import { catchError, finalize, mapTo, tap } from 'rxjs/operators';
 
 import { DockerBuildSchema } from './schema';
 import { Docker } from '../docker';
@@ -13,12 +13,13 @@ export default createBuilder<json.JsonObject & DockerBuildSchema>(
     const imageName = resolveProject(schema, context);
 
     return docker.buildImage({ imageName }).pipe(
-      tap(out => context.logger.info(out.stream)),
+      tap(out => context.logger.info(out.stream || '')),
       mapTo({ success: true }),
       catchError((error) => {
         context.logger.error(`Error: ${error}`);
         return of({ success: false });
       }),
+      finalize(() => docker.cleanup()),
     );
   },
 );

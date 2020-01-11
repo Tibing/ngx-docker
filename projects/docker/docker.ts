@@ -3,7 +3,7 @@ import * as Stream from 'stream';
 import { from, Observable, Observer } from 'rxjs';
 import { mergeMap } from 'rxjs/operators';
 import { join } from 'path';
-import { tmpdir } from 'os';
+import { readdirSync, unlinkSync } from 'fs';
 
 import { Dockerfile } from './dockerfile';
 import { writeFile } from './reactify';
@@ -29,9 +29,10 @@ export interface BuildImageProgress {
 export class Docker {
 
   private delegate: Dockerode = new Dockerode();
+  private root: string = process.cwd();
 
   buildImage(options: BuildImageOptions): Observable<BuildImageProgress> {
-    return this.createTmpDockerfile().pipe(
+    return this.createTmpDockerfile(options.imageName).pipe(
       mergeMap(() => this.buildImageDelegate(options.imageName)),
       mergeMap(this.followProgress.bind(this)),
     );
@@ -41,10 +42,19 @@ export class Docker {
     return this.runDelegate(options);
   }
 
+  cleanup(): void {
+    unlinkSync(join(this.root, DOCKERFILE_NAME));
+  }
+
   private buildImageDelegate(t: string): Observable<ReadableStream> {
+    const ignore = ['node_modules', '.git', '.gitignore', '.idea', '.editorconfig'];
+    const files: string[] = readdirSync(process.cwd())
+      .filter((file: string) => !ignore.includes(file));
+    files.push(DOCKERFILE_NAME);
+
     return from<Observable<ReadableStream>>(this.delegate.buildImage({
-      context: tmpdir(),
-      src: [DOCKERFILE_NAME],
+      context: this.root,
+      src: files,
     }, { t }));
   }
 
@@ -63,10 +73,8 @@ export class Docker {
     ));
   }
 
-  private createTmpDockerfile(): Observable<void> {
-    const dockerfilePath = join(tmpdir(), DOCKERFILE_NAME);
-    const root = process.cwd();
-    return writeFile(dockerfilePath, Dockerfile(root));
+  private createTmpDockerfile(projectName: string): Observable<void> {
+    return writeFile(join(this.root, DOCKERFILE_NAME), Dockerfile(projectName));
   }
 
   private followProgress(stream: ReadableStream): Observable<boolean> {
