@@ -3,10 +3,11 @@ import * as Stream from 'stream';
 import { from, Observable, Observer } from 'rxjs';
 import { mergeMap } from 'rxjs/operators';
 import { join } from 'path';
-import { readdirSync, unlinkSync } from 'fs';
+import { readdirSync } from 'fs';
 
 import { Dockerfile } from './dockerfile';
 import { writeFile } from './reactify';
+import EventEmitter = NodeJS.EventEmitter;
 
 const DOCKERFILE_NAME = 'Dockerfile';
 
@@ -38,12 +39,12 @@ export class Docker {
     );
   }
 
-  run(options: RunOptions): Observable<boolean> {
+  run(options: RunOptions): Observable<BuildImageProgress> {
     return this.runDelegate(options);
   }
 
   cleanup(): void {
-    unlinkSync(join(this.root, DOCKERFILE_NAME));
+    // unlinkSync(join(this.root, DOCKERFILE_NAME));
   }
 
   private buildImageDelegate(t: string): Observable<ReadableStream> {
@@ -58,19 +59,28 @@ export class Docker {
     }, { t }));
   }
 
-  private runDelegate(options: RunOptions): Observable<boolean> {
+  private runDelegate(options: RunOptions): Observable<BuildImageProgress> {
     const defaultOptions = {
       stream: [process.stdout, process.stderr],
       createOptions: { Tty: false },
     };
     const { container, cmd, stream, createOptions, startOptions } = { ...defaultOptions, ...options };
-    return from<Observable<boolean>>(this.delegate.run(
-      container,
-      cmd,
-      stream,
-      createOptions,
-      startOptions,
-    ));
+
+    return new Observable<BuildImageProgress>((observer: Observer<BuildImageProgress>) => {
+      const hub: EventEmitter = this.delegate.run(
+        container,
+        cmd,
+        stream,
+        createOptions,
+        startOptions,
+        (err) => observer.error(err.message),
+      );
+
+      hub.on('container', (data) => {
+        observer.next({ stream: `Container with id: ${data.id} was created` });
+        observer.complete();
+      });
+    });
   }
 
   private createTmpDockerfile(projectName: string): Observable<void> {
