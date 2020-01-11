@@ -3,7 +3,7 @@ import * as Stream from 'stream';
 import { from, Observable, Observer } from 'rxjs';
 import { mergeMap } from 'rxjs/operators';
 import { join } from 'path';
-import { readdirSync } from 'fs';
+import { existsSync, readdirSync, unlinkSync } from 'fs';
 
 import { Dockerfile } from './dockerfile';
 import { writeFile } from './reactify';
@@ -44,7 +44,11 @@ export class Docker {
   }
 
   cleanup(): void {
-    // unlinkSync(join(this.root, DOCKERFILE_NAME));
+    const dockerfile = join(this.root, DOCKERFILE_NAME);
+
+    if (existsSync(dockerfile)) {
+      unlinkSync(dockerfile);
+    }
   }
 
   private buildImageDelegate(t: string): Observable<ReadableStream> {
