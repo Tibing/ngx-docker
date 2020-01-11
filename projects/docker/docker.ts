@@ -23,7 +23,7 @@ export interface BuildImageOptions {
 }
 
 export interface BuildImageProgress {
-  status: string;
+  stream: string;
 }
 
 export class Docker {
