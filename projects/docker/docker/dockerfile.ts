@@ -1,11 +1,11 @@
-export const Dockerfile = (projectName: string) => `
+export const Dockerfile = (projectName: string, buildCommand: string) => `
 ### STAGE 1: Build ###
 FROM node:12.7-alpine AS build
 WORKDIR /usr/src/app
 COPY package.json ./
 RUN npm install
 COPY . .
-RUN npm run build
+RUN npm run ${buildCommand}
 
 ### STAGE 2: Run ###
 FROM nginx:1.17.1-alpine

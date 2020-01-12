@@ -8,10 +8,10 @@
       "description": "The name of the project.",
       "default": ""
     },
-    "dockerfile": {
-      "description": "Path to Dockerfile",
+    "buildCommand": {
       "type": "string",
-      "default": "Dockerfile"
+      "description": "The command will be used to build an application.",
+      "default": "build"
     }
   }
 }

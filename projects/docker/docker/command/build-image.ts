@@ -24,6 +24,7 @@ const DOCKERFILE_NAME = 'Dockerfile';
 
 export interface BuildImageOptions {
   imageName: string;
+  buildCommand: string;
 }
 
 export class BuildImageCommand implements Command<DockerBuildSchema> {
@@ -33,7 +34,7 @@ export class BuildImageCommand implements Command<DockerBuildSchema> {
 
   execute(schema: DockerBuildSchema, context: BuilderContext): Observable<CommandExecutionProgress> {
     const imageName: string = this.createImageName(schema, context);
-    return this.buildImage({ imageName });
+    return this.buildImage({ imageName, buildCommand: schema.buildCommand });
   }
 
   cleanup(): void {
@@ -45,7 +46,7 @@ export class BuildImageCommand implements Command<DockerBuildSchema> {
   }
 
   private buildImage(options: BuildImageOptions): Observable<CommandExecutionProgress> {
-    return this.createTmpDockerfile(options.imageName).pipe(
+    return this.createTmpDockerfile(options.imageName, options.buildCommand).pipe(
       mergeMap(() => this.buildImageDelegate(options.imageName)),
       mergeMap(this.followProgress.bind(this)),
     );
@@ -63,8 +64,8 @@ export class BuildImageCommand implements Command<DockerBuildSchema> {
     }, { t }));
   }
 
-  private createTmpDockerfile(projectName: string): Observable<void> {
-    return writeFile(join(this.root, DOCKERFILE_NAME), Dockerfile(projectName));
+  private createTmpDockerfile(projectName: string, buildCommand: string): Observable<void> {
+    return writeFile(join(this.root, DOCKERFILE_NAME), Dockerfile(projectName, buildCommand));
   }
 
   private followProgress(stream: ReadableStream): Observable<boolean> {
