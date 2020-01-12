@@ -36,10 +36,6 @@ export class RunCommand implements Command<DockerRunSchema> {
     return this.runDelegate({ container, port });
   }
 
-  cleanup(): void {
-    // no need to cleanup after running image
-  }
-
   private runDelegate(options: RunOptions): Observable<CommandExecutionProgress> {
     const defaultOptions = {
       stream: [process.stdout, process.stderr],

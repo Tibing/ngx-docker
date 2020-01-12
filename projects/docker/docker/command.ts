@@ -1,5 +1,5 @@
 import { BuilderContext, BuilderOutput } from '@angular-devkit/architect';
-import { catchError, finalize, mapTo, tap } from 'rxjs/operators';
+import { catchError, mapTo, tap } from 'rxjs/operators';
 import { Observable, of } from 'rxjs';
 
 
@@ -10,8 +10,6 @@ export interface CommandExecutionProgress {
 export interface Command<T> {
 
   execute(schema: T, context: BuilderContext): Observable<CommandExecutionProgress>;
-
-  cleanup(): void;
 }
 
 export interface DockerCommandRunnerOptions<T> {
@@ -27,7 +25,6 @@ export function runCommand<T>(options: DockerCommandRunnerOptions<T>): Observabl
     tap(writeLog(context)),
     mapTo({ success: true }),
     catchError(logError(context)),
-    finalize(() => command.cleanup()),
   );
 }
 

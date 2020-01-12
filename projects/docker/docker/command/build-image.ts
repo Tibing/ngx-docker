@@ -3,12 +3,12 @@ import { BuilderContext, BuilderOutput, createBuilder } from '@angular-devkit/ar
 import { from, Observable, Observer } from 'rxjs';
 import * as Dockerode from 'dockerode';
 import { mergeMap } from 'rxjs/operators';
-import { existsSync, readdirSync, unlinkSync } from 'fs';
-import { join } from 'path';
+import { readdirSync } from 'fs';
+import { createGzip } from 'zlib';
+import { pack } from 'tar-fs';
 
 import { Command, CommandExecutionProgress, runCommand } from '../command';
 import { DockerBuildSchema } from '../../build-image/schema';
-import { writeFile } from '../reactify';
 import { Dockerfile } from '../dockerfile';
 
 
@@ -20,8 +20,6 @@ export function createBuildImageBuilder() {
   );
 }
 
-const DOCKERFILE_NAME = 'Dockerfile';
-
 export interface BuildImageOptions {
   imageName: string;
   buildCommand: string;
@@ -30,48 +28,37 @@ export interface BuildImageOptions {
 
 export class BuildImageCommand implements Command<DockerBuildSchema> {
 
-  private delegate: Dockerode = new Dockerode();
-  private root: string = process.cwd();
+  private dockerode: Dockerode = new Dockerode();
 
   execute(schema: DockerBuildSchema, context: BuilderContext): Observable<CommandExecutionProgress> {
     const imageName: string = this.createImageName(schema, context);
     return this.buildImage({ imageName, buildCommand: schema.buildCommand, verbose: schema.verbose });
   }
 
-  cleanup(): void {
-    const dockerfile = join(this.root, DOCKERFILE_NAME);
-
-    if (existsSync(dockerfile)) {
-      unlinkSync(dockerfile);
-    }
-  }
-
   private buildImage(options: BuildImageOptions): Observable<CommandExecutionProgress> {
-    return this.createTmpDockerfile(options.imageName, options.buildCommand).pipe(
-      mergeMap(() => this.buildImageDelegate(options.imageName)),
+    return this.buildImageDelegate(options.imageName, options.buildCommand).pipe(
       mergeMap((stream: ReadableStream) => this.followProgress(stream, options.verbose)),
     );
   }
 
-  private buildImageDelegate(t: string): Observable<ReadableStream> {
-    const ignore = ['node_modules', '.git', '.gitignore', '.idea', '.editorconfig'];
-    const files: string[] = readdirSync(process.cwd())
-      .filter((file: string) => !ignore.includes(file));
-    files.push(DOCKERFILE_NAME);
-
-    return from<Observable<ReadableStream>>(this.delegate.buildImage({
-      context: this.root,
-      src: files,
-    }, { t }));
+  private buildImageDelegate(t: string, buildCommand: string): Observable<ReadableStream> {
+    const sourceArchive: ReadableStream = this.createSourceArchive(t, buildCommand);
+    return from<Observable<ReadableStream>>(this.dockerode.buildImage(sourceArchive, { t }));
   }
 
-  private createTmpDockerfile(projectName: string, buildCommand: string): Observable<void> {
-    return writeFile(join(this.root, DOCKERFILE_NAME), Dockerfile(projectName, buildCommand));
+  private createSourceArchive(t: string, buildCommand: string): ReadableStream {
+    const ignore = ['node_modules', '.git', '.gitignore', '.idea', '.editorconfig'];
+    const files: string[] = readdirSync(process.cwd())
+      .filter((f: string) => !ignore.includes(f));
+
+    const p = pack(process.cwd(), { entries: files });
+    p.entry({ name: 'Dockerfile' }, Dockerfile(t, buildCommand));
+    return p.pipe(createGzip());
   }
 
   private followProgress(stream: ReadableStream, verbose: boolean): Observable<CommandExecutionProgress> {
     return new Observable<CommandExecutionProgress>((observer: Observer<CommandExecutionProgress>) => {
-      this.delegate.modem.followProgress(stream,
+      this.dockerode.modem.followProgress(stream,
         (err, res) => {
           if (err) {
             observer.error(err);
