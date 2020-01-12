@@ -19,6 +19,7 @@ export function createRunBuilder() {
 
 export interface RunOptions {
   container: string;
+  port: number;
   cmd?: string[];
   stream?: Stream[];
   createOptions?: any[];
@@ -31,7 +32,8 @@ export class RunCommand implements Command<DockerRunSchema> {
 
   execute(schema: DockerRunSchema, context: BuilderContext): Observable<CommandExecutionProgress> {
     const container: string = this.createContainerName(schema, context);
-    return this.runDelegate({ container });
+    const port: number = schema.port;
+    return this.runDelegate({ container, port });
   }
 
   cleanup(): void {
@@ -45,7 +47,7 @@ export class RunCommand implements Command<DockerRunSchema> {
         Tty: false,
         ExposedPorts: { '80/tcp': {} },
         Hostconfig: {
-          PortBindings: { '80/tcp': [{ HostPort: '5000' }] },
+          PortBindings: { '80/tcp': [{ HostPort: `${options.port}` }] },
         },
       },
       cmd: [],
