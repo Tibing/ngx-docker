@@ -3,8 +3,24 @@
   "version": "0.0.1",
   "main": "index.js",
   "description": "Angular CLI Docker",
-  "keywords": ["angular", "typescript", "rxjs", "webpack"],
+  "keywords": [
+    "angular",
+    "typescript",
+    "rxjs",
+    "builder",
+    "docker"
+  ],
   "author": "Nikita Poltoratsky",
   "license": "MIT",
-  "builders": "builders.json"
+  "builders": "builders.json",
+  "schematics": "./schematics/collection.json",
+  "dependencies": {
+    "tar-fs": "2.0.0",
+    "zlib": "1.0.5",
+    "dockerode": "2.5.8"
+  },
+  "peerDependencies": {
+    "@angular/cdk": "^8.2.3",
+    "@angular/core": "~8.0.0"
+  }
 }
