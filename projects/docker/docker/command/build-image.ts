@@ -23,6 +23,7 @@ export function createBuildImageBuilder() {
 export interface BuildImageOptions {
   imageName: string;
   buildCommand: string;
+  nodeVersion: string;
   verbose: boolean;
 }
 
@@ -31,28 +32,28 @@ export class BuildImageCommand implements Command<DockerBuildSchema> {
   private dockerode: Dockerode = new Dockerode();
 
   execute(schema: DockerBuildSchema, context: BuilderContext): Observable<CommandExecutionProgress> {
-    const imageName: string = this.createImageName(schema, context);
-    return this.buildImage({ imageName, buildCommand: schema.buildCommand, verbose: schema.verbose });
+    const options: BuildImageOptions = this.createBuildImageOptions(schema, context);
+    return this.buildImage(options);
   }
 
   private buildImage(options: BuildImageOptions): Observable<CommandExecutionProgress> {
-    return this.buildImageDelegate(options.imageName, options.buildCommand).pipe(
+    return this.buildImageDelegate(options).pipe(
       mergeMap((stream: ReadableStream) => this.followProgress(stream, options.verbose)),
     );
   }
 
-  private buildImageDelegate(t: string, buildCommand: string): Observable<ReadableStream> {
-    const sourceArchive: ReadableStream = this.createSourceArchive(t, buildCommand);
-    return from<Observable<ReadableStream>>(this.dockerode.buildImage(sourceArchive, { t }));
+  private buildImageDelegate(options: BuildImageOptions): Observable<ReadableStream> {
+    const sourceArchive: ReadableStream = this.createSourceArchive(options);
+    return from<Observable<ReadableStream>>(this.dockerode.buildImage(sourceArchive, { t: options.imageName }));
   }
 
-  private createSourceArchive(t: string, buildCommand: string): ReadableStream {
+  private createSourceArchive(options: BuildImageOptions): ReadableStream {
     const ignore = ['node_modules', '.git', '.gitignore', '.idea', '.editorconfig'];
     const files: string[] = readdirSync(process.cwd())
       .filter((f: string) => !ignore.includes(f));
 
     const p = pack(process.cwd(), { entries: files });
-    p.entry({ name: 'Dockerfile' }, Dockerfile(t, buildCommand));
+    p.entry({ name: 'Dockerfile' }, Dockerfile(options));
     return p.pipe(createGzip());
   }
 
@@ -73,6 +74,12 @@ export class BuildImageCommand implements Command<DockerBuildSchema> {
     });
   }
 
+  private createBuildImageOptions(schema: DockerBuildSchema, context: BuilderContext): BuildImageOptions {
+    const imageName: string = this.createImageName(schema, context);
+    const nodeVersion: string = this.resolveNodeVersion(schema);
+    return { ...schema, imageName, nodeVersion };
+  }
+
   private createImageName(schema: DockerBuildSchema, context: BuilderContext): string {
     if (schema.project) {
       return schema.project;
@@ -83,5 +90,12 @@ export class BuildImageCommand implements Command<DockerBuildSchema> {
     }
 
     throw new Error(`Please, provide project name for the builder.`);
+  }
+
+  private resolveNodeVersion(schema: DockerBuildSchema): string {
+    // @ts-ignore
+    // const majorVersion: string = process.version.match(/^v(\d+\.\d+)/)[1].split('.')[0];
+    const majorVersion = '12.7-alpine';
+    return schema.nodeVersion || majorVersion;
   }
 }

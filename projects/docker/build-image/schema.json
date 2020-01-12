@@ -13,6 +13,11 @@
       "description": "The command will be used to build an application.",
       "default": "build"
     },
+    "nodeVersion": {
+      "type": "string",
+      "description": "Docker node image version.",
+      "default": ""
+    },
     "verbose": {
       "type": "boolean",
       "description": "Whether to output all docker logs or not.",
