@@ -25,6 +25,7 @@ const DOCKERFILE_NAME = 'Dockerfile';
 export interface BuildImageOptions {
   imageName: string;
   buildCommand: string;
+  verbose: boolean;
 }
 
 export class BuildImageCommand implements Command<DockerBuildSchema> {
@@ -34,7 +35,7 @@ export class BuildImageCommand implements Command<DockerBuildSchema> {
 
   execute(schema: DockerBuildSchema, context: BuilderContext): Observable<CommandExecutionProgress> {
     const imageName: string = this.createImageName(schema, context);
-    return this.buildImage({ imageName, buildCommand: schema.buildCommand });
+    return this.buildImage({ imageName, buildCommand: schema.buildCommand, verbose: schema.verbose });
   }
 
   cleanup(): void {
@@ -48,7 +49,7 @@ export class BuildImageCommand implements Command<DockerBuildSchema> {
   private buildImage(options: BuildImageOptions): Observable<CommandExecutionProgress> {
     return this.createTmpDockerfile(options.imageName, options.buildCommand).pipe(
       mergeMap(() => this.buildImageDelegate(options.imageName)),
-      mergeMap(this.followProgress.bind(this)),
+      mergeMap((stream: ReadableStream) => this.followProgress(stream, options.verbose)),
     );
   }
 
@@ -68,8 +69,8 @@ export class BuildImageCommand implements Command<DockerBuildSchema> {
     return writeFile(join(this.root, DOCKERFILE_NAME), Dockerfile(projectName, buildCommand));
   }
 
-  private followProgress(stream: ReadableStream): Observable<boolean> {
-    return new Observable<boolean>((observer: Observer<boolean>) => {
+  private followProgress(stream: ReadableStream, verbose: boolean): Observable<CommandExecutionProgress> {
+    return new Observable<CommandExecutionProgress>((observer: Observer<CommandExecutionProgress>) => {
       this.delegate.modem.followProgress(stream,
         (err, res) => {
           if (err) {
@@ -80,7 +81,7 @@ export class BuildImageCommand implements Command<DockerBuildSchema> {
             observer.complete();
           }
         },
-        (progress) => observer.next(progress),
+        (progress) => verbose && observer.next(progress),
       );
     });
   }
