@@ -17,6 +17,7 @@
   "dependencies": {
     "tar-fs": "2.0.0",
     "zlib": "1.0.5",
+    "tslib": "^2.0.0",
     "dockerode": "2.5.8"
   },
   "peerDependencies": {
