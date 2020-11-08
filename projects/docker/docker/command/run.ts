@@ -61,7 +61,7 @@ export class RunCommand implements Command<DockerRunSchema> {
       );
 
       hub.on('start', (data) => {
-        observer.next({ stream: `Container with id: ${data.id} up and running` });
+        observer.next({ stream: `Container with id: ${data.id} up and running at: https://localhost:${options.port}` });
         observer.complete();
       });
     });

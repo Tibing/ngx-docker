@@ -2,7 +2,7 @@ import { json } from '@angular-devkit/core';
 import { BuilderContext, BuilderOutput, createBuilder } from '@angular-devkit/architect';
 import { from, Observable, Observer } from 'rxjs';
 import * as Dockerode from 'dockerode';
-import { mergeMap } from 'rxjs/operators';
+import { switchMap } from 'rxjs/operators';
 import { readdirSync } from 'fs';
 import { createGzip } from 'zlib';
 import { pack } from 'tar-fs';
@@ -38,7 +38,7 @@ export class BuildImageCommand implements Command<DockerBuildSchema> {
 
   private buildImage(options: BuildImageOptions): Observable<CommandExecutionProgress> {
     return this.buildImageDelegate(options).pipe(
-      mergeMap((stream: ReadableStream) => this.followProgress(stream, options.verbose)),
+      switchMap((stream: ReadableStream) => this.followProgress(stream, options.verbose)),
     );
   }
 
